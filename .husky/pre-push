@@ -1,0 +1,27 @@
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+# Allow main and develop to push without validation
+if echo "$branch" | grep -qE "^(main|develop)$"; then
+  exit 0
+fi
+
+PATTERN="^(feature|bugfix|hotfix|refactor|sim|experiment)\/[A-Z][A-Z0-9]*-[0-9]+-[a-z0-9-]+$|^release\/[0-9]+\.[0-9]+\.[0-9]+$|^experiment\/[a-z0-9-]+$"
+
+if ! echo "$branch" | grep -qE "$PATTERN"; then
+  echo "----------------------------------------------------"
+  echo "ERROR: Branch name '$branch' does not follow convention"
+  echo ""
+  echo "Valid formats:"
+  echo "  feature/ARM-42-short-description"
+  echo "  bugfix/AMR-17-short-description"
+  echo "  hotfix/ARM-99-short-description"
+  echo "  refactor/ARM-55-optimise-torque-calculation"
+  echo "  release/1.4.0"
+  echo "  sim/AMR-55-warehouse-scenario"
+  echo "  experiment/topic-name"
+  echo "----------------------------------------------------"
+  exit 1
+fi
+
+echo "Branch name '$branch' is valid"
+exit 0

@@ -1,0 +1,57 @@
+name: PR Validation
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [develop, main]
+
+jobs:
+  validate-branch-name:
+    name: Branch Name Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        run: |
+          branch="${{ github.head_ref }}"
+          echo "Checking branch name: $branch"
+          PATTERN="^(feature|bugfix|hotfix|refactor|sim)/[A-Z][A-Z0-9]*-[0-9]+-[a-z0-9-]+$|^release/[0-9]+\.[0-9]+\.[0-9]+$|^experiment/[a-z0-9-]+$"
+          if echo "$branch" | grep -qE "$PATTERN"; then
+            echo "Branch name valid: $branch"
+          else
+            echo "Invalid branch name: $branch"
+            echo "Required format: feature/TICKET-123-description"
+            echo "Valid types: feature bugfix hotfix refactor sim experiment release"
+            exit 1
+          fi
+
+  validate-pr-title:
+    name: PR Title Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title follows Conventional Commits
+        run: |
+          title="${{ github.event.pull_request.title }}"
+          echo "Checking PR title: $title"
+          PATTERN="^(feat|fix|refactor|test|sim|ci|docs|chore|build)\((arm|amr|humanoid|sim|nav|slam|perception|control|hw|sdk|infra|docs|ci|repo)\): .{1,72}$"
+          if echo "$title" | grep -qE "$PATTERN"; then
+            echo "PR title valid"
+          else
+            echo "Invalid PR title: $title"
+            echo "Required: type(scope): description"
+            echo "Example: feat(arm): add torque limit safety layer"
+            exit 1
+          fi
+
+  validate-pr-body:
+    name: PR Ticket Reference Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR body contains ticket reference
+        run: |
+          body="${{ github.event.pull_request.body }}"
+          if echo "$body" | grep -qiE "(closes|fixes|relates to) #[A-Z][A-Z0-9]*-[0-9]+"; then
+            echo "Ticket reference found"
+          else
+            echo "No ticket reference found in PR body"
+            echo "Add one of: Closes #ARM-42  Fixes #AMR-17  Relates to #HUM-8"
+            exit 1
+          fi
